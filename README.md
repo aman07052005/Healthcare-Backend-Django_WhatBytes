@@ -1,42 +1,86 @@
 # Healthcare Backend (Django + DRF + PostgreSQL)
 
-A REST API implementation for the supplied Django healthcare assignment. It includes JWT authentication, patient and doctor management, patient-doctor mappings, validation, environment-based configuration, and ownership checks for patient data.
+A REST API implementation for the Django healthcare assignment. It includes JWT authentication, patient and doctor management, patient–doctor mappings, input validation, environment-based configuration, and ownership checks for patient data.
 
 ## Requirements
+
 - Python 3.10+
 - PostgreSQL 14+
 - pip
 
 ## Setup (Windows PowerShell)
 
+### 1. Clone the repository
+
+```powershell
+git clone https://github.com/aman07052005/Healthcare-Backend-Django_WhatBytes.git
+cd Healthcare-Backend-Django_WhatBytes
+```
+
+### 2. Create and activate a virtual environment
+
 ```powershell
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
+```
+
+### 3. Install dependencies
+
+```powershell
 pip install -r requirements.txt
+```
+
+### 4. Configure environment variables
+
+Create your local environment file:
+
+```powershell
 Copy-Item .env.example .env
 ```
 
-Edit `.env` and set `SECRET_KEY` and your PostgreSQL credentials. Create the database in PostgreSQL:
+Edit `.env` and configure `SECRET_KEY`, `DEBUG`, `ALLOWED_HOSTS`, and your PostgreSQL credentials. Use a strong, randomly generated secret key and never commit your `.env` file.
+
+### 5. Create the PostgreSQL database
+
+Ensure PostgreSQL is running, then create the database using your PostgreSQL client:
 
 ```sql
 CREATE DATABASE healthcare_db;
 ```
 
-Then run:
+Make sure the database name and credentials match the values in `.env`.
+
+### 6. Apply migrations
 
 ```powershell
-python manage.py makemigrations accounts patients doctors mappings
 python manage.py migrate
+```
+
+### 7. Create an administrator account (optional)
+
+```powershell
 python manage.py createsuperuser
+```
+
+### 8. Start the development server
+
+```powershell
 python manage.py runserver
 ```
 
-API base URL: `http://127.0.0.1:8000`
+The API will be available at:
+
+`http://127.0.0.1:8000`
 
 ## Authentication
 
+Authentication uses JSON Web Tokens (JWT) through Django REST Framework SimpleJWT.
+
 ### Register
-`POST /api/auth/register/`
+
+**POST** `/api/auth/register/`
+
+Request body:
 
 ```json
 {
@@ -46,8 +90,13 @@ API base URL: `http://127.0.0.1:8000`
 }
 ```
 
+Register a user account. The password must satisfy the application's password validation rules.
+
 ### Login
-`POST /api/auth/login/`
+
+**POST** `/api/auth/login/`
+
+Request body:
 
 ```json
 {
@@ -56,44 +105,79 @@ API base URL: `http://127.0.0.1:8000`
 }
 ```
 
-Response includes `access` and `refresh` JWTs. For protected endpoints, add this header:
+The response includes `access` and `refresh` JWTs.
 
-`Authorization: Bearer <access-token>`
+For protected endpoints, include the access token in the request header:
 
-### Refresh
-`POST /api/auth/token/refresh/`
-
-```json
-{"refresh": "<refresh-token>"}
+```http
+Authorization: Bearer <access-token>
 ```
 
-## Endpoints
+### Refresh access token
+
+**POST** `/api/auth/token/refresh/`
+
+Request body:
+
+```json
+{
+  "refresh": "<refresh-token>"
+}
+```
+
+Use the refresh token to obtain a new access token.
+
+## API Endpoints
+
+### Authentication
 
 | Method | Endpoint | Purpose |
 |---|---|---|
 | POST | `/api/auth/register/` | Register a user |
 | POST | `/api/auth/login/` | Obtain JWT tokens |
 | POST | `/api/auth/token/refresh/` | Refresh an access token |
-| POST | `/api/patients/` | Create a patient owned by current user |
-| GET | `/api/patients/` | List current user's patients |
-| GET | `/api/patients/{id}/` | Retrieve one of current user's patients |
-| PUT/PATCH | `/api/patients/{id}/` | Update own patient |
-| DELETE | `/api/patients/{id}/` | Delete own patient |
-| POST | `/api/doctors/` | Create doctor |
+
+### Patients
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| POST | `/api/patients/` | Create a patient owned by the authenticated user |
+| GET | `/api/patients/` | List the authenticated user's patients |
+| GET | `/api/patients/{id}/` | Retrieve one of the user's patients |
+| PUT | `/api/patients/{id}/` | Fully update an owned patient |
+| PATCH | `/api/patients/{id}/` | Partially update an owned patient |
+| DELETE | `/api/patients/{id}/` | Delete an owned patient |
+
+### Doctors
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| POST | `/api/doctors/` | Create a doctor |
 | GET | `/api/doctors/` | List doctors |
-| GET | `/api/doctors/{id}/` | Retrieve doctor |
-| PUT/PATCH | `/api/doctors/{id}/` | Update doctor |
-| DELETE | `/api/doctors/{id}/` | Delete doctor |
-| POST | `/api/mappings/` | Assign doctor to own patient |
-| GET | `/api/mappings/` | List mappings for own patients |
-| GET | `/api/mappings/{patient_id}/` | List doctors assigned to a patient |
-| DELETE | `/api/mappings/{mapping_id}/` | Remove mapping |
+| GET | `/api/doctors/{id}/` | Retrieve a doctor |
+| PUT | `/api/doctors/{id}/` | Fully update a doctor |
+| PATCH | `/api/doctors/{id}/` | Partially update a doctor |
+| DELETE | `/api/doctors/{id}/` | Delete a doctor |
 
-All patient, doctor and mapping endpoints require JWT authentication. A user only sees and changes their own patients and mappings. Doctor records are shared across authenticated users as requested by the assignment. Duplicate doctor assignments to a patient are rejected.
+### Patient–Doctor Mappings
 
-## Example payloads
+| Method | Endpoint | Purpose |
+|---|---|---|
+| POST | `/api/mappings/` | Assign a doctor to an owned patient |
+| GET | `/api/mappings/` | List mappings for the authenticated user's patients |
+| GET | `/api/mappings/{patient_id}/` | List doctors assigned to a specific patient |
+| DELETE | `/api/mappings/{mapping_id}/` | Remove a patient–doctor mapping |
 
-Patient (`POST /api/patients/`):
+All patient, doctor, and mapping endpoints require JWT authentication.
+
+Users can access and manage only their own patient records and associated mappings. Doctor records are shared among authenticated users. Duplicate doctor assignments to the same patient are rejected.
+
+## Example Request Payloads
+
+### Create a patient
+
+**POST** `/api/patients/`
+
 ```json
 {
   "name": "Riya Sharma",
@@ -106,7 +190,10 @@ Patient (`POST /api/patients/`):
 }
 ```
 
-Doctor (`POST /api/doctors/`):
+### Create a doctor
+
+**POST** `/api/doctors/`
+
 ```json
 {
   "name": "Dr. Mehta",
@@ -117,7 +204,10 @@ Doctor (`POST /api/doctors/`):
 }
 ```
 
-Mapping (`POST /api/mappings/`):
+### Assign a doctor to a patient
+
+**POST** `/api/mappings/`
+
 ```json
 {
   "patient": 1,
@@ -125,9 +215,36 @@ Mapping (`POST /api/mappings/`):
 }
 ```
 
+The patient ID must belong to the authenticated user. The doctor ID must identify an existing doctor.
+
 ## Notes and Implementation Details
 
-- **Patient–Doctor Mapping Routes:** The endpoint `GET /api/mappings/<patient_id>/` retrieves doctors assigned to a specific patient. It is configured before the router-generated mapping detail routes to avoid URL conflicts and ensure the intended endpoint is matched.
+- **Patient–Doctor Mapping Routes:** `GET /api/mappings/<patient_id>/` retrieves the doctors assigned to a specific patient. The mapping routes are explicitly configured in `mappings/urls.py`. For `DELETE /api/mappings/<mapping_id>/`, the path ID identifies the mapping to be removed, as required by the assignment.
 - **Update Operations:** `PUT` supports full resource updates, while `PATCH` supports partial updates for patient and doctor records.
-- **Security Configuration:** Environment variables are used for sensitive configuration. Before production deployment, set `DEBUG=False`, configure a strong secret key, restrict `ALLOWED_HOSTS`, and enable HTTPS and appropriate security settings.
-- **Database and Testing:** PostgreSQL must be running and correctly configured before applying migrations or starting the application. After setup, verify the API endpoints using Postman or `curl`, including authentication, validation, and access-control behavior.
+- **Input Validation:** Patient age is validated, user registration applies password validation, and duplicate patient–doctor assignments are prevented.
+- **Security Configuration:** Sensitive configuration is read from environment variables. Before production deployment, set `DEBUG=False`, use a strong secret key, restrict `ALLOWED_HOSTS`, and configure HTTPS and other appropriate security settings.
+- **Database Configuration:** PostgreSQL must be running and correctly configured before applying migrations or starting the application.
+- **API Testing:** Verify endpoints using Postman, `curl`, or another API client, including authentication, validation, and access-control behavior.
+
+## Running Tests
+
+Run the project's Django tests with:
+
+```powershell
+python manage.py test
+```
+
+You can also check the Django configuration with:
+
+```powershell
+python manage.py check
+```
+
+## Technology Stack
+
+- **Backend:** Python, Django, Django REST Framework
+- **Authentication:** JWT using Django REST Framework SimpleJWT
+- **Database:** PostgreSQL
+- **ORM:** Django ORM
+- **Configuration:** Environment variables using `django-environ`
+
