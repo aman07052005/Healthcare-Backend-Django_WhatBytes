@@ -125,8 +125,9 @@ Mapping (`POST /api/mappings/`):
 }
 ```
 
-## Notes
-- The assignment's `GET /api/mappings/<patient_id>/` overlaps with mapping-detail URL patterns. This project explicitly places the patient-specific route before router URLs, so it takes precedence.
-- `PUT` is supported for updates; DRF also exposes `PATCH` for partial updates.
-- Set `DEBUG=False` and a secure secret key before production use. Add HTTPS and deployment-specific security settings before publishing.
-- Test endpoints with Postman or curl after migrations. PostgreSQL must be running and reachable.
+## Notes and Implementation Details
+
+- **Patient–Doctor Mapping Routes:** The endpoint `GET /api/mappings/<patient_id>/` retrieves doctors assigned to a specific patient. It is configured before the router-generated mapping detail routes to avoid URL conflicts and ensure the intended endpoint is matched.
+- **Update Operations:** `PUT` supports full resource updates, while `PATCH` supports partial updates for patient and doctor records.
+- **Security Configuration:** Environment variables are used for sensitive configuration. Before production deployment, set `DEBUG=False`, configure a strong secret key, restrict `ALLOWED_HOSTS`, and enable HTTPS and appropriate security settings.
+- **Database and Testing:** PostgreSQL must be running and correctly configured before applying migrations or starting the application. After setup, verify the API endpoints using Postman or `curl`, including authentication, validation, and access-control behavior.
